@@ -25,7 +25,7 @@ app.post('/download', (req, res) => {
   });
 });
 
-// ✅ כאן השורה החשובה:
+// ✅ חשוב: מאזין לפורט שמוגדר ע"י רנדר
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
