@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const { exec } = require('child_process');
 const cors = require('cors');
@@ -13,10 +14,12 @@ app.post('/download', (req, res) => {
     return res.status(400).json({ error: 'Missing URL' });
   }
 
-  const command = `yt-dlp -x --audio-format mp3 -o audio.mp3 "${videoUrl}"`;
+  const command = `yt-dlp -x --audio-format mp3 -o audio.mp3 \"${videoUrl}\"`;
+  console.log('Running command:', command);
 
   exec(command, (err) => {
     if (err) {
+      console.error('yt-dlp failed:', err.message);
       return res.status(500).json({ error: err.message });
     }
 
@@ -25,7 +28,6 @@ app.post('/download', (req, res) => {
   });
 });
 
-// ✅ חשוב: מאזין לפורט שמוגדר ע"י רנדר
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
