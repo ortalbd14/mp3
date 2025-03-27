@@ -4,41 +4,29 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(express.json());
 app.use(cors());
 
 app.post('/download', (req, res) => {
   const videoUrl = req.body.url;
-
   if (!videoUrl) {
-    return res.status(400).json({ error: 'Missing video URL in body' });
+    return res.status(400).json({ error: 'Missing URL' });
   }
 
-  console.log(`Downloading: ${videoUrl}`);
+  const command = `yt-dlp -x --audio-format mp3 -o audio.mp3 "${videoUrl}"`;
 
-  const outputFile = path.join(__dirname, 'audio.mp3');
-
-  exec(`yt-dlp -x --audio-format mp3 -o "${outputFile}" ${videoUrl}`, (err) => {
+  exec(command, (err) => {
     if (err) {
-      console.error('Download error:', err.message);
-      return res.status(500).json({ error: 'Failed to download audio' });
+      return res.status(500).json({ error: err.message });
     }
 
-    res.download(outputFile, 'audio.mp3', (err) => {
-      if (err) {
-        console.error('Send file error:', err.message);
-        res.status(500).json({ error: 'Failed to send file' });
-      }
-    });
+    const filePath = path.join(__dirname, 'audio.mp3');
+    res.sendFile(filePath);
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Server is running ✔️');
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+// ✅ כאן השורה החשובה:
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
