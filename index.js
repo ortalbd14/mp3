@@ -5,38 +5,34 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
 app.post('/download', async (req, res) => {
   const videoUrl = req.body.url;
 
   if (!videoUrl || !ytdl.validateURL(videoUrl)) {
-    return res.status(400).json({ error: 'Invalid YouTube URL' });
+    return res.status(400).json({ error: 'Invalid or missing URL' });
   }
 
-  const filePath = path.join(__dirname, 'audio.mp4');
-
   try {
-    const stream = ytdl(videoUrl, {
-      quality: 'highestaudio',
-      filter: 'audioonly'
-    });
+    const filePath = path.join(__dirname, 'audio.mp3');
+    const stream = ytdl(videoUrl, { filter: 'audioonly' });
+    const writeStream = fs.createWriteStream(filePath);
 
-    const file = fs.createWriteStream(filePath);
-    stream.pipe(file);
+    stream.pipe(writeStream);
 
-    file.on('finish', () => {
+    writeStream.on('finish', () => {
       res.sendFile(filePath);
     });
 
-    file.on('error', (err) => {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to write file' });
+    writeStream.on('error', (err) => {
+      console.error('Stream error:', err);
+      res.status(500).json({ error: 'Failed to write audio file' });
     });
-
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Download error:', err);
+    res.status(500).json({ error: 'Failed to download audio' });
   }
 });
 
