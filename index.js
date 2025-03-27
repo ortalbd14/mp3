@@ -1,35 +1,24 @@
 const express = require('express');
 const { exec } = require('child_process');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 app.use(cors());
 
 app.post('/download', (req, res) => {
   const videoUrl = req.body.url;
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'לא סופק url' });
-  }
+  if (!videoUrl) return res.status(400).json({ error: 'Missing video URL' });
 
-  const command = `python3 -m yt_dlp -x --audio-format mp3 -o audio.mp3 ${videoUrl}`;
+  exec(`yt-dlp -x --audio-format mp3 -o audio.mp3 ${videoUrl}`, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
 
-  exec(command, (err) => {
-    if (err) {
-      console.error('שגיאה בהרצת yt-dlp:', err);
-      return res.status(500).json({ error: err.message });
-    }
-    const filePath = path.join(__dirname, 'audio.mp3');
-    res.sendFile(filePath, (error) => {
-      if (error) {
-        console.error('שגיאה בשליחת הקובץ:', error);
-        return res.status(500).send('Error sending file');
-      }
-    });
+    res.sendFile(__dirname + '/audio.mp3');
   });
 });
 
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
