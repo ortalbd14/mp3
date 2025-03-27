@@ -1,31 +1,43 @@
-// index.js
 const express = require('express');
-const { exec } = require('child_process');
 const cors = require('cors');
+const ytdl = require('ytdl-core');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.post('/download', (req, res) => {
+app.post('/download', async (req, res) => {
   const videoUrl = req.body.url;
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'Missing URL' });
+
+  if (!videoUrl || !ytdl.validateURL(videoUrl)) {
+    return res.status(400).json({ error: 'Invalid YouTube URL' });
   }
 
-  const command = `yt-dlp -x --audio-format mp3 -o audio.mp3 \"${videoUrl}\"`;
-  console.log('Running command:', command);
+  const filePath = path.join(__dirname, 'audio.mp4');
 
-  exec(command, (err) => {
-    if (err) {
-      console.error('yt-dlp failed:', err.message);
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const stream = ytdl(videoUrl, {
+      quality: 'highestaudio',
+      filter: 'audioonly'
+    });
 
-    const filePath = path.join(__dirname, 'audio.mp3');
-    res.sendFile(filePath);
-  });
+    const file = fs.createWriteStream(filePath);
+    stream.pipe(file);
+
+    file.on('finish', () => {
+      res.sendFile(filePath);
+    });
+
+    file.on('error', (err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to write file' });
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const port = process.env.PORT || 3000;
